@@ -36,6 +36,13 @@ public class JwtService {
         return extractAllClaims(token).getSubject();
     }
 
+    // =========================
+    // Extract UserId from Token
+    // =========================
+    public String extractUserId(String token) {
+        return extractAllClaims(token).get("userId", String.class);
+    }
+
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(secretKey)

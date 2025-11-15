@@ -11,6 +11,7 @@ import com.finance_service.finance.repository.UserProfileRepository;
 import com.finance_service.finance.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,14 +25,16 @@ public class AnalyticsController {
     private final AnalyticsService analyticsService;
     private final UserProfileRepository userProfileRepository;
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<AnalyticsResponse> getAnalytics(@PathVariable String userId) {
+    @GetMapping
+    public ResponseEntity<AnalyticsResponse> getAnalytics(Authentication authentication) {
+        String userId = (String) authentication.getPrincipal();
         AnalyticsResponse response = analyticsService.getCompleteAnalytics(userId);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{userId}/health-score")
-    public ResponseEntity<FinancialHealthScoreResponse> getHealthScore(@PathVariable String userId) {
+    @GetMapping("/health-score")
+    public ResponseEntity<FinancialHealthScoreResponse> getHealthScore(Authentication authentication) {
+        String userId = (String) authentication.getPrincipal();
         UserProfile profile = userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ProfileNotFoundException("Profile not found for user: " + userId));
 
@@ -39,8 +42,9 @@ public class AnalyticsController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{userId}/ratios")
-    public ResponseEntity<FinancialRatiosResponse> getRatios(@PathVariable String userId) {
+    @GetMapping("/ratios")
+    public ResponseEntity<FinancialRatiosResponse> getRatios(Authentication authentication) {
+        String userId = (String) authentication.getPrincipal();
         UserProfile profile = userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ProfileNotFoundException("Profile not found for user: " + userId));
 
@@ -48,8 +52,9 @@ public class AnalyticsController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{userId}/spending")
-    public ResponseEntity<SpendingByCategoryResponse> getSpendingAnalysis(@PathVariable String userId) {
+    @GetMapping("/spending")
+    public ResponseEntity<SpendingByCategoryResponse> getSpendingAnalysis(Authentication authentication) {
+        String userId = (String) authentication.getPrincipal();
         UserProfile profile = userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ProfileNotFoundException("Profile not found for user: " + userId));
 
@@ -57,16 +62,18 @@ public class AnalyticsController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{userId}/net-worth")
+    @GetMapping("/net-worth")
     public ResponseEntity<List<NetWorthDataPoint>> getNetWorthTrend(
-            @PathVariable String userId,
+            Authentication authentication,
             @RequestParam(defaultValue = "6") int months) {
+        String userId = (String) authentication.getPrincipal();
         List<NetWorthDataPoint> response = analyticsService.getNetWorthTrend(userId, months);
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/{userId}/recalculate")
-    public ResponseEntity<AnalyticsResponse> recalculateAnalytics(@PathVariable String userId) {
+    @PostMapping("/recalculate")
+    public ResponseEntity<AnalyticsResponse> recalculateAnalytics(Authentication authentication) {
+        String userId = (String) authentication.getPrincipal();
         AnalyticsResponse response = analyticsService.getCompleteAnalytics(userId);
         return ResponseEntity.ok(response);
     }
