@@ -27,6 +27,8 @@ public class SecurityConfig {
 
             // Configure authorization rules
             .authorizeHttpRequests(auth -> auth
+                // Permit health check and monitoring endpoints
+                .requestMatchers("/health", "/health/**", "/actuator/**").permitAll()
                 // Permit Swagger UI endpoints
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 // ALL other requests require authentication
