@@ -13,4 +13,5 @@ spring.data.mongodb.authentication-database=admin
 # IMPORTANT: Secret key must be at least 256 bits (32 characters) for HS256 algorithm
 # The secret will be injected via environment variable from docker-compose
 # This MUST be the same across all microservices!
-app.jwt.secret=${JWT_SECRET}
+# Fallback value for local development (same as .env file)
+app.jwt.secret=${JWT_SECRET:MyVerySecureJwtSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm}

@@ -12,4 +12,5 @@ spring.data.mongodb.authentication-database=admin
 # JWT Configuration
 # IMPORTANT: This secret MUST be the same as auth-service!
 # The secret will be injected via environment variable from docker-compose
-app.jwt.secret=${JWT_SECRET}
+# Fallback value for local development (same as .env file)
+app.jwt.secret=${JWT_SECRET:MyVerySecureJwtSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm}
