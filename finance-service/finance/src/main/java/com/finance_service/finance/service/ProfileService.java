@@ -1,6 +1,7 @@
 package com.finance_service.finance.service;
 
 import com.finance_service.finance.dto.DashboardSummaryResponse;
+import com.finance_service.finance.dto.FinancialHealthScoreResponse;
 import com.finance_service.finance.dto.ProfileResponse;
 import com.finance_service.finance.exception.ProfileAlreadyExistsException;
 import com.finance_service.finance.exception.ProfileNotFoundException;
@@ -21,6 +22,7 @@ public class ProfileService {
 
     private final UserProfileRepository userProfileRepository;
     private final KafkaProducerService kafkaProducerService;
+    private final AnalyticsService analyticsService;
 
     @Transactional
     public ProfileResponse createProfile(String userId, UserProfile profileData) {
@@ -116,8 +118,11 @@ public class ProfileService {
         Double monthlyExpenses = calculateTotalExpenses(profile);
         Double netSurplus = monthlyIncome - monthlyExpenses;
 
-        // For now, return placeholder health score (will be calculated by AnalyticsService)
-        return new DashboardSummaryResponse(monthlyIncome, monthlyExpenses, netSurplus, 0);
+        // Calculate actual health score using AnalyticsService
+        FinancialHealthScoreResponse healthScoreResponse = analyticsService.calculateHealthScore(profile);
+        Integer overallScore = healthScoreResponse.getOverallScore();
+
+        return new DashboardSummaryResponse(monthlyIncome, monthlyExpenses, netSurplus, overallScore);
     }
 
     // Helper methods
