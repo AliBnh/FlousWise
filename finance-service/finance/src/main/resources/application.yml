@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: finance-service
+
+  # MongoDB Configuration
+  data:
+    mongodb:
+      uri: mongodb://mongodb:27017/flouswise
+      database: flouswise
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: finance-service-group
+      auto-offset-reset: earliest
+
+# Server Configuration
+server:
+  port: 8081
+
+# Logging Configuration
+logging:
+  level:
+    com.finance_service.finance: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Actuator & Metrics Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,metrics,info
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# CORS Configuration
+cors:
+  allowed-origins: http://localhost:5173,http://localhost
+
+# JWT Configuration
+jwt:
+  secret: flouswise-super-secret-key-change-in-production-2024
+  expiration: 900000
+
+# Swagger/OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
