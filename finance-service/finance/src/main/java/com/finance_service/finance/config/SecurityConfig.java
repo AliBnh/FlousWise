@@ -31,8 +31,6 @@ public class SecurityConfig {
                 .requestMatchers("/health", "/health/**", "/actuator/**").permitAll()
                 // Permit Swagger UI endpoints
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                // Temporarily permit profile endpoints for testing (TODO: Re-enable authentication later)
-                .requestMatchers("/api/profile/**", "/api/analytics/**").permitAll()
                 // ALL other requests require authentication
                 .anyRequest().authenticated()
             )
