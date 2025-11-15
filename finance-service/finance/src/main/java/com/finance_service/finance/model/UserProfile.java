@@ -1,14 +1,18 @@
 package com.finance_service.finance.model;
 
+import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import java.time.LocalDateTime;
+import java.util.List;
 
+@Data
 @Document(collection = "user_profiles")
 public class UserProfile {
     @Id
     private String id;
 
-    private String userId;  // Reference to Auth Service user
+    private String userId;
 
     // Section 1: Basic Information
     private BasicInformation basicInformation;
@@ -44,13 +48,10 @@ public class UserProfile {
     private RiskProfile riskProfile;
 
     // Section 12: Additional Context
-    private String additionalContext;  // Large text field
-
-    // Section 13: Privacy
-    private PrivacySettings privacySettings;
+    private String additionalContext;
 
     // System fields
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private boolean isProfileComplete;
+    private Boolean isProfileComplete;
 }
