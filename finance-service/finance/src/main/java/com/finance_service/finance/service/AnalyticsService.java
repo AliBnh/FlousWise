@@ -551,21 +551,43 @@ public class AnalyticsService {
     private Double calculateHealthcare(UserProfile profile) {
         if (profile.getVariableExpenses() == null) return 0.0;
 
-        return profile.getVariableExpenses().getHealthCare() != null ?
-                profile.getVariableExpenses().getHealthCare() : 0.0;
+        Double medications = profile.getVariableExpenses().getMedications() != null ?
+                profile.getVariableExpenses().getMedications() : 0.0;
+        Double doctorVisits = profile.getVariableExpenses().getDoctorVisits() != null ?
+                profile.getVariableExpenses().getDoctorVisits() : 0.0;
+        Double pharmacyItems = profile.getVariableExpenses().getPharmacyItems() != null ?
+                profile.getVariableExpenses().getPharmacyItems() : 0.0;
+
+        return medications + doctorVisits + pharmacyItems;
     }
 
     private Double calculateEntertainment(UserProfile profile) {
         if (profile.getVariableExpenses() == null) return 0.0;
 
-        return profile.getVariableExpenses().getEntertainment() != null ?
-                profile.getVariableExpenses().getEntertainment() : 0.0;
+        Double moviesEvents = profile.getVariableExpenses().getMoviesEvents() != null ?
+                profile.getVariableExpenses().getMoviesEvents() : 0.0;
+        Double hobbies = profile.getVariableExpenses().getHobbies() != null ?
+                profile.getVariableExpenses().getHobbies() : 0.0;
+        Double sportsGym = profile.getVariableExpenses().getSportsGym() != null ?
+                profile.getVariableExpenses().getSportsGym() : 0.0;
+        Double otherEntertainment = profile.getVariableExpenses().getOtherEntertainment() != null ?
+                profile.getVariableExpenses().getOtherEntertainment() : 0.0;
+
+        return moviesEvents + hobbies + sportsGym + otherEntertainment;
     }
 
     private Double calculateEducation(UserProfile profile) {
         if (profile.getVariableExpenses() == null) return 0.0;
 
-        return profile.getVariableExpenses().getEducation() != null ?
-                profile.getVariableExpenses().getEducation() : 0.0;
+        Double schoolFees = profile.getVariableExpenses().getSchoolFees() != null ?
+                profile.getVariableExpenses().getSchoolFees() : 0.0;
+        Double schoolSupplies = profile.getVariableExpenses().getSchoolSupplies() != null ?
+                profile.getVariableExpenses().getSchoolSupplies() : 0.0;
+        Double tutoring = profile.getVariableExpenses().getTutoring() != null ?
+                profile.getVariableExpenses().getTutoring() : 0.0;
+        Double onlineCourses = profile.getVariableExpenses().getOnlineCourses() != null ?
+                profile.getVariableExpenses().getOnlineCourses() : 0.0;
+
+        return schoolFees + schoolSupplies + tutoring + onlineCourses;
     }
 }
