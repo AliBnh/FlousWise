@@ -36,13 +36,9 @@ public class AuthService {
         user.setEmail(dto.getEmail());
         user.setName(dto.getName());
         user.setPassword(passwordEncoder.encode(dto.getPassword())); // hash
-
-        user.setVerificationToken(UUID.randomUUID().toString());
+        user.setVerified(true); // Directly verify user without email confirmation
 
         userRepository.save(user);
-
-        // send verification email (pseudo)
-        System.out.println("Send email with token: " + user.getVerificationToken());
     }
 
     // =========================
@@ -57,10 +53,6 @@ public class AuthService {
 
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Invalid email or password");
-        }
-
-        if (!user.isVerified()) {
-            throw new EmailNotVerifiedException("Email not verified. Please check your email to verify your account.");
         }
 
         String accessToken = jwtService.generateAccessToken(user.getEmail());

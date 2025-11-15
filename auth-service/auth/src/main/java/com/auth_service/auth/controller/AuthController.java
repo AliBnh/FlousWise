@@ -31,12 +31,12 @@ public class AuthController {
     // REGISTER
     // =========================
     @PostMapping("/register")
-    @Operation(summary = "Register a new user", description = "Creates a new user account and sends a verification email")
+    @Operation(summary = "Register a new user", description = "Creates a new user account with immediate access")
     public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterDTO dto) {
         authService.register(dto);
 
         Map<String, String> response = new HashMap<>();
-        response.put("message", "Registration successful. Please check your email to verify your account.");
+        response.put("message", "Registration successful. You can now login with your credentials.");
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
