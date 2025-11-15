@@ -78,6 +78,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=default
       - JWT_SECRET=${JWT_SECRET}
+      - SPRING_DATA_MONGODB_URI=mongodb://admin:password123@mongodb:27017/flouswise?authSource=admin
     restart: unless-stopped
 
   # Finance Service
@@ -98,7 +99,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=default
       - JWT_SECRET=${JWT_SECRET}
-      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/flouswise
+      - SPRING_DATA_MONGODB_URI=mongodb://admin:password123@mongodb:27017/flouswise?authSource=admin
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     restart: unless-stopped
 
