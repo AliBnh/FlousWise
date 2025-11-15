@@ -33,8 +33,11 @@ public class ProfileService {
         profileData.setUserId(userId);
         profileData.setCreatedAt(LocalDateTime.now());
         profileData.setUpdatedAt(LocalDateTime.now());
-        profileData.setIsProfileComplete(false);
+        if (profileData.getIsProfileComplete() == null) {
 
+            profileData.setIsProfileComplete(false);
+
+        }
         // Calculate totals
         calculateAndCacheTotals(profileData);
 
