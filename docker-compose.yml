@@ -45,6 +45,25 @@ services:
         condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=default
+      - JWT_SECRET=${JWT_SECRET}
+    restart: unless-stopped
+
+  # Finance Service
+  finance-service:
+    build:
+      context: ./finance-service/finance
+      dockerfile: Dockerfile
+    container_name: finance-service
+    ports:
+      - "8081:8081"
+    networks:
+      - flouswise-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - JWT_SECRET=${JWT_SECRET}
     restart: unless-stopped
 
 volumes:
