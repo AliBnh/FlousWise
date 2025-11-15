@@ -1,0 +1,308 @@
+# ============================================
+# FLOUSWISE - Git Ignore File
+# ============================================
+
+# ============================================
+# 1. SENSITIVE DATA & SECRETS
+# ============================================
+# Never commit passwords, API keys, tokens
+
+# Environment variables (contain secrets)
+.env
+.env.local
+.env.production
+.env.development
+*.env
+
+# Application properties with secrets
+**/application-secrets.properties
+**/application-local.properties
+**/application.properties
+
+# JWT secret keys
+**/jwt-secret.key
+
+# Database credentials
+**/db-credentials.txt
+
+# API keys
+**/api-keys.json
+
+
+# ============================================
+# 2. DOCKER & CONTAINERS
+# ============================================
+# Docker generates these, don't need in Git
+
+# Docker volumes (data persisted locally)
+# We DON'T want database data in Git
+**/docker-volumes/
+**/data/db/
+**/data/redis/
+
+# Docker Compose override files (personal dev configs)
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Docker build cache
+.dockerignore
+
+
+# ============================================
+# 3. DATABASES & BACKUPS
+# ============================================
+# Database files and backups are too large for Git
+
+# MongoDB dumps
+**/dump/
+**/*.bson
+**/*.metadata.json
+
+# Redis dumps
+**/dump.rdb
+**/appendonly.aof
+
+# Backups
+**/backups/
+**/*-backup.tar.gz
+**/*-backup.zip
+
+# ChromaDB vector database
+**/chroma_data/
+**/.chroma/
+
+
+# ============================================
+# 4. JAVA / SPRING BOOT (auth-service, finance-service)
+# ============================================
+
+# Maven
+**/target/
+**/pom.xml.tag
+**/pom.xml.releaseBackup
+**/pom.xml.versionsBackup
+**/pom.xml.next
+**/release.properties
+**/dependency-reduced-pom.xml
+**/buildNumber.properties
+**/.mvn/timing.properties
+**/.mvn/wrapper/maven-wrapper.jar
+
+# Gradle (if you use Gradle instead of Maven)
+**/.gradle/
+**/build/
+**/gradle-app.setting
+**/!gradle-wrapper.jar
+
+# IntelliJ IDEA
+**/.idea/
+**/*.iws
+**/*.iml
+**/*.ipr
+**/out/
+
+# Eclipse
+**/.classpath
+**/.project
+**/.settings/
+**/bin/
+
+# NetBeans
+**/nbproject/private/
+**/nbbuild/
+**/dist/
+**/nbdist/
+**/.nb-gradle/
+
+# Spring Boot
+**/application-*.log
+**/spring.log
+
+
+# ============================================
+# 5. PYTHON / FASTAPI (ai-service)
+# ============================================
+
+# Virtual environments
+**/venv/
+**/env/
+**/ENV/
+**/.venv/
+**/pyenv/
+**/.python-version
+
+# Python cache
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/*.so
+**/.Python
+
+# Distribution / packaging
+**/*.egg-info/
+**/dist/
+**/build/
+**/eggs/
+**/.eggs/
+**/parts/
+**/sdist/
+**/wheels/
+**/*.egg
+
+# PyInstaller
+**/*.manifest
+**/*.spec
+
+# Unit test / coverage
+**/.pytest_cache/
+**/.coverage
+**/.coverage.*
+**/htmlcov/
+**/.tox/
+**/.nox/
+
+# Jupyter Notebook
+**/.ipynb_checkpoints
+
+# pyenv
+**/.python-version
+
+# Celery
+**/celerybeat-schedule
+**/celerybeat.pid
+
+# SageMath parsed files
+**/*.sage.py
+
+# Spyder project settings
+**/.spyderproject
+**/.spyproject
+
+# Rope project settings
+**/.ropeproject
+
+# mypy
+**/.mypy_cache/
+**/.dmypy.json
+**/dmypy.json
+
+# Pyre type checker
+**/.pyre/
+
+
+# ============================================
+# 6. NODE.JS / REACT (frontend)
+# ============================================
+
+# Dependencies
+**/node_modules/
+**/jspm_packages/
+
+# Production build
+**/build/
+**/dist/
+**/.next/
+**/out/
+
+# Testing
+**/coverage/
+**/.nyc_output/
+
+# Logs
+**/logs/
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/lerna-debug.log*
+**/.pnpm-debug.log*
+
+# Runtime data
+**/pids/
+**/*.pid
+**/*.seed
+**/*.pid.lock
+
+# Cache
+**/.npm/
+**/.eslintcache
+**/.stylelintcache
+**/.cache/
+**/.parcel-cache/
+**/.vite/
+
+# Optional npm cache directory
+**/.npm
+
+# Optional eslint cache
+**/.eslintcache
+
+# Optional REPL history
+**/.node_repl_history
+
+# Output of 'npm pack'
+**/*.tgz
+
+# Yarn
+**/.yarn/cache
+**/.yarn/unplugged
+**/.yarn/build-state.yml
+**/.yarn/install-state.gz
+**/.pnp.*
+
+# Environment variables
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+
+
+# ============================================
+# 7. LOGS & MONITORING
+# ============================================
+
+# Application logs
+**/logs/
+**/*.log
+
+# ELK Stack data
+**/elasticsearch/data/
+**/logstash/data/
+
+# Prometheus data
+**/prometheus/data/
+
+# Grafana data
+**/grafana/data/
+
+
+# ============================================
+# 8. IDE & EDITORS
+# ============================================
+
+# Visual Studio Code
+**/.vscode/
+**/*.code-workspace
+
+# Sublime Text
+**/*.sublime-project
+**/*.sublime-workspace
+
+# Vim
+**/*.swp
+**/*.swo
+**/*~
+
+# Emacs
+**/*~
+**/#*#
+**/.#*
+
+# JetBrains IDEs (IntelliJ, PyCharm, WebStorm)
+**/.idea/
+**/*.iml
+
+
+# ============================================
+# 9. OPERATING SYSTEM
+# ==
