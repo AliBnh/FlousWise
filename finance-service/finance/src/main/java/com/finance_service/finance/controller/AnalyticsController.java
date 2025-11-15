@@ -9,6 +9,8 @@ import com.finance_service.finance.exception.ProfileNotFoundException;
 import com.finance_service.finance.model.UserProfile;
 import com.finance_service.finance.repository.UserProfileRepository;
 import com.finance_service.finance.service.AnalyticsService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,6 +22,8 @@ import java.util.List;
 @RequestMapping("/api/analytics")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
+@Tag(name = "Analytics", description = "Financial analytics and insights")
+@SecurityRequirement(name = "Bearer Authentication")
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
