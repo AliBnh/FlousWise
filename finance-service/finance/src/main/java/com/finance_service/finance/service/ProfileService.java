@@ -1,6 +1,7 @@
 package com.finance_service.finance.service;
 
 import com.finance_service.finance.dto.DashboardSummaryResponse;
+import com.finance_service.finance.dto.FinancialHealthScoreResponse;
 import com.finance_service.finance.dto.ProfileResponse;
 import com.finance_service.finance.exception.ProfileAlreadyExistsException;
 import com.finance_service.finance.exception.ProfileNotFoundException;
@@ -21,6 +22,7 @@ public class ProfileService {
 
     private final UserProfileRepository userProfileRepository;
     private final KafkaProducerService kafkaProducerService;
+    private final AnalyticsService analyticsService;
 
     @Transactional
     public ProfileResponse createProfile(String userId, UserProfile profileData) {
@@ -33,7 +35,11 @@ public class ProfileService {
         profileData.setUserId(userId);
         profileData.setCreatedAt(LocalDateTime.now());
         profileData.setUpdatedAt(LocalDateTime.now());
+
+        // Set isProfileComplete to false if not provided
         if (profileData.getIsProfileComplete() == null) {
+            profileData.setIsProfileComplete(false);
+        }
 
             profileData.setIsProfileComplete(false);
 
@@ -42,6 +48,9 @@ public class ProfileService {
         calculateAndCacheTotals(profileData);
 
         UserProfile savedProfile = userProfileRepository.save(profileData);
+
+        // Calculate and save all analytics
+        analyticsService.calculateAndSaveAllAnalytics(userId);
 
         // Publish event
         kafkaProducerService.publishProfileCreatedEvent(userId);
@@ -85,6 +94,9 @@ public class ProfileService {
 
         UserProfile updatedProfile = userProfileRepository.save(existingProfile);
 
+        // Recalculate and save all analytics
+        analyticsService.calculateAndSaveAllAnalytics(userId);
+
         // Publish event
         kafkaProducerService.publishProfileUpdatedEvent(userId, "full_profile");
 
@@ -115,8 +127,11 @@ public class ProfileService {
         Double monthlyExpenses = calculateTotalExpenses(profile);
         Double netSurplus = monthlyIncome - monthlyExpenses;
 
-        // For now, return placeholder health score (will be calculated by AnalyticsService)
-        return new DashboardSummaryResponse(monthlyIncome, monthlyExpenses, netSurplus, 0);
+        // Get health score from saved analytics (read-only, no calculation)
+        FinancialHealthScoreResponse healthScoreResponse = analyticsService.getHealthScore(userId);
+        Integer overallScore = healthScoreResponse.getOverallScore();
+
+        return new DashboardSummaryResponse(monthlyIncome, monthlyExpenses, netSurplus, overallScore);
     }
 
     // Helper methods
