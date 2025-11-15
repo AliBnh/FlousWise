@@ -4,6 +4,8 @@ import com.finance_service.finance.dto.DashboardSummaryResponse;
 import com.finance_service.finance.dto.ProfileResponse;
 import com.finance_service.finance.model.UserProfile;
 import com.finance_service.finance.service.ProfileService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/profile")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
+@Tag(name = "Profile Management", description = "User financial profile operations")
+@SecurityRequirement(name = "Bearer Authentication")
 public class ProfileController {
 
     private final ProfileService profileService;
