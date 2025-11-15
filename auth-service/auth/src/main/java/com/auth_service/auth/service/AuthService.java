@@ -55,8 +55,8 @@ public class AuthService {
             throw new InvalidCredentialsException("Invalid email or password");
         }
 
-        String accessToken = jwtService.generateAccessToken(user.getEmail());
-        String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+        String accessToken = jwtService.generateAccessToken(user.getEmail(), user.getId());
+        String refreshToken = jwtService.generateRefreshToken(user.getEmail(), user.getId());
 
         return new AuthResponseDTO(accessToken, refreshToken, user);
     }
@@ -111,11 +111,10 @@ public class AuthService {
         }
 
         String email = jwtService.extractEmail(refreshToken);
-
-        String newAccess = jwtService.generateAccessToken(email);
-        String newRefresh = jwtService.generateRefreshToken(email);
-
         User user = userRepository.findByEmail(email);
+
+        String newAccess = jwtService.generateAccessToken(email, user.getId());
+        String newRefresh = jwtService.generateRefreshToken(email, user.getId());
 
         return new AuthResponseDTO(newAccess, newRefresh, user);
     }

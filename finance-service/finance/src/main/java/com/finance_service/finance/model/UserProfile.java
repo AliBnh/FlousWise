@@ -1,5 +1,6 @@
 package com.finance_service.finance.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -10,8 +11,10 @@ import java.util.List;
 @Document(collection = "user_profiles")
 public class UserProfile {
     @Id
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String id;
 
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String userId;
 
     // Section 1: Basic Information
@@ -51,7 +54,9 @@ public class UserProfile {
     private String additionalContext;
 
     // System fields
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private LocalDateTime createdAt;
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private LocalDateTime updatedAt;
     private Boolean isProfileComplete;
 }
