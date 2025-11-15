@@ -41,9 +41,6 @@ public class ProfileService {
             profileData.setIsProfileComplete(false);
         }
 
-            profileData.setIsProfileComplete(false);
-
-        }
         // Calculate totals
         calculateAndCacheTotals(profileData);
 
