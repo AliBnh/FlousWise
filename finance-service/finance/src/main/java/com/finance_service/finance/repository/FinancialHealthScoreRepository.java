@@ -1,0 +1,14 @@
+package com.finance_service.finance.repository;
+
+import com.finance_service.finance.model.FinancialHealthScore;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface FinancialHealthScoreRepository extends MongoRepository<FinancialHealthScore, String> {
+    Optional<FinancialHealthScore> findByUserId(String userId);
+    List<FinancialHealthScore> findByUserIdOrderByCalculatedAtDesc(String userId);
+}
