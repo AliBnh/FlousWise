@@ -3,6 +3,7 @@ package com.auth_service.auth.service;
 import com.auth_service.auth.dto.AuthResponseDTO;
 import com.auth_service.auth.dto.LoginDTO;
 import com.auth_service.auth.dto.RegisterDTO;
+import com.auth_service.auth.exception.*;
 import com.auth_service.auth.model.User;
 import com.auth_service.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthService {
 
-
     private final UserRepository userRepository;
     private final JwtService jwtService;
 
@@ -26,7 +26,7 @@ public class AuthService {
     // =========================
     public void register(RegisterDTO dto) {
         if (userRepository.findByEmail(dto.getEmail()) != null) {
-            throw new RuntimeException("email_already_used");
+            throw new EmailAlreadyExistsException("Email is already registered");
         }
 
         User user = new User();
@@ -48,14 +48,16 @@ public class AuthService {
     public AuthResponseDTO login(LoginDTO dto) {
 
         User user = userRepository.findByEmail(dto.getEmail());
-        if (user == null) throw new RuntimeException("user_not_found");
+        if (user == null) {
+            throw new UserNotFoundException("User not found");
+        }
 
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
-            throw new RuntimeException("invalid_credentials");
+            throw new InvalidCredentialsException("Invalid email or password");
         }
 
         if (!user.isVerified()) {
-            throw new RuntimeException("email_not_verified");
+            throw new EmailNotVerifiedException("Email not verified. Please check your email to verify your account.");
         }
 
         String accessToken = jwtService.generateAccessToken(user.getEmail());
@@ -69,7 +71,9 @@ public class AuthService {
     // =========================
     public void verifyEmail(String token) {
         User user = userRepository.findByVerificationToken(token);
-        if (user == null) throw new RuntimeException("invalid_token");
+        if (user == null) {
+            throw new InvalidTokenException("Invalid or expired verification token");
+        }
 
         user.setVerified(true);
         user.setVerificationToken(null);
@@ -81,7 +85,7 @@ public class AuthService {
     // =========================
     public void forgotPassword(String email) {
         User user = userRepository.findByEmail(email);
-        if (user == null) return;
+        if (user == null) return; // Don't reveal if email exists
 
         user.setResetPasswordToken(UUID.randomUUID().toString());
         userRepository.save(user);
@@ -92,21 +96,24 @@ public class AuthService {
     // =========================
     // RESET PASSWORD
     // =========================
-    public void resetPassword(String token, String newPassword) {
-        User user = userRepository.findByResetPasswordToken(token);
-        if (user == null) throw new RuntimeException("invalid_token");
-
-        user.setPassword(passwordEncoder.encode(newPassword));
-        user.setResetPasswordToken(null);
-        userRepository.save(user);
-    }
+//    public void resetPassword(String token, String newPassword) {
+//        User user = userRepository.findByResetPasswordToken(token);
+//        if (user == null) {
+//            throw new InvalidTokenException("Invalid or expired reset token");
+//        }
+//
+//        user.setPassword(passwordEncoder.encode(newPassword));
+//        user.setResetPasswordToken(null);
+//        userRepository.save(user);
+//    }
 
     // =========================
     // REFRESH TOKEN
     // =========================
     public AuthResponseDTO refreshToken(String refreshToken) {
-        if (!jwtService.validateToken(refreshToken))
-            throw new RuntimeException("invalid_token");
+        if (!jwtService.validateToken(refreshToken)) {
+            throw new InvalidTokenException("Invalid or expired refresh token");
+        }
 
         String email = jwtService.extractEmail(refreshToken);
 
