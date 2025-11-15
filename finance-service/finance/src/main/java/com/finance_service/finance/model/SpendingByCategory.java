@@ -4,6 +4,8 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @Document(collection = "spending_analytics")
@@ -13,28 +15,17 @@ public class SpendingByCategory {
 
     private String userId;
 
-    // Category breakdowns
-    private Double debtPayments;
-    private Double food;
-    private Double transportation;
-    private Double housing;
-    private Double utilities;
-    private Double healthcare;
-    private Double entertainment;
-    private Double education;
-    private Double other;
+    // Category amounts (e.g., {"Food": 1200.0, "Housing": 3000.0, ...})
+    private Map<String, Double> categories;
 
-    // Percentages
-    private Double debtPaymentsPercentage;
-    private Double foodPercentage;
-    private Double transportationPercentage;
-    private Double housingPercentage;
-    private Double utilitiesPercentage;
-    private Double healthcarePercentage;
-    private Double entertainmentPercentage;
-    private Double educationPercentage;
-    private Double otherPercentage;
+    // Category percentages (e.g., {"Food": 15.36, "Housing": 38.40, ...})
+    private Map<String, Double> percentages;
 
-    private Double totalExpenses;
+    // Top spending categories (e.g., ["Housing", "Food", "Transportation"])
+    private List<String> topCategories;
+
+    // Spending insights and recommendations
+    private List<String> insights;
+
     private LocalDateTime calculatedAt;
 }
