@@ -46,6 +46,9 @@ public class ProfileService {
 
         UserProfile savedProfile = userProfileRepository.save(profileData);
 
+        // Calculate and save all analytics
+        analyticsService.calculateAndSaveAllAnalytics(userId);
+
         // Publish event
         kafkaProducerService.publishProfileCreatedEvent(userId);
 
@@ -88,6 +91,9 @@ public class ProfileService {
 
         UserProfile updatedProfile = userProfileRepository.save(existingProfile);
 
+        // Recalculate and save all analytics
+        analyticsService.calculateAndSaveAllAnalytics(userId);
+
         // Publish event
         kafkaProducerService.publishProfileUpdatedEvent(userId, "full_profile");
 
@@ -118,8 +124,8 @@ public class ProfileService {
         Double monthlyExpenses = calculateTotalExpenses(profile);
         Double netSurplus = monthlyIncome - monthlyExpenses;
 
-        // Calculate actual health score using AnalyticsService
-        FinancialHealthScoreResponse healthScoreResponse = analyticsService.calculateHealthScore(profile);
+        // Get health score from saved analytics (read-only, no calculation)
+        FinancialHealthScoreResponse healthScoreResponse = analyticsService.getHealthScore(userId);
         Integer overallScore = healthScoreResponse.getOverallScore();
 
         return new DashboardSummaryResponse(monthlyIncome, monthlyExpenses, netSurplus, overallScore);

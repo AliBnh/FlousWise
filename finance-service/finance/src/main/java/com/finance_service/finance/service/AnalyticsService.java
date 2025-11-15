@@ -1,12 +1,14 @@
 package com.finance_service.finance.service;
 
 import com.finance_service.finance.dto.*;
+import com.finance_service.finance.exception.AnalyticsNotFoundException;
 import com.finance_service.finance.exception.ProfileNotFoundException;
 import com.finance_service.finance.model.*;
 import com.finance_service.finance.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -22,23 +24,107 @@ public class AnalyticsService {
     private final SpendingByCategoryRepository spendingRepository;
     private final NetWorthHistoryRepository netWorthRepository;
 
-    public AnalyticsResponse getCompleteAnalytics(String userId) {
-        log.info("Fetching complete analytics for user: {}", userId);
+    // ========================================
+    // PUBLIC API: Calculate and Save (Called by ProfileService on create/update)
+    // ========================================
+
+    /**
+     * Calculates and saves ALL analytics for a user.
+     * Called when profile is created or updated.
+     */
+    @Transactional
+    public void calculateAndSaveAllAnalytics(String userId) {
+        log.info("Calculating and saving all analytics for user: {}", userId);
 
         UserProfile profile = userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ProfileNotFoundException("Profile not found for user: " + userId));
 
+        calculateAndSaveHealthScore(profile);
+        calculateAndSaveRatios(profile);
+        calculateAndSaveSpending(profile);
+        saveNetWorthSnapshot(profile);
+
+        log.info("Successfully saved all analytics for user: {}", userId);
+    }
+
+    // ========================================
+    // PUBLIC API: Read Only (Called by AnalyticsController on GET requests)
+    // ========================================
+
+    /**
+     * Gets complete analytics (read from DB, no calculation).
+     */
+    public AnalyticsResponse getCompleteAnalytics(String userId) {
+        log.info("Fetching complete analytics for user: {}", userId);
+
         AnalyticsResponse response = new AnalyticsResponse();
-        response.setFinancialHealthScore(calculateHealthScore(profile));
-        response.setFinancialRatios(calculateRatios(profile));
-        response.setSpendingByCategory(analyzeSpending(profile));
+        response.setFinancialHealthScore(getHealthScore(userId));
+        response.setFinancialRatios(getRatios(userId));
+        response.setSpendingByCategory(getSpendingAnalysis(userId));
         response.setNetWorthTrend(getNetWorthTrend(userId, 6));
 
         return response;
     }
 
-    public FinancialHealthScoreResponse calculateHealthScore(UserProfile profile) {
-        log.info("Calculating financial health score for user: {}", profile.getUserId());
+    /**
+     * Gets health score (read from DB, no calculation).
+     */
+    public FinancialHealthScoreResponse getHealthScore(String userId) {
+        log.info("Fetching health score for user: {}", userId);
+
+        FinancialHealthScore saved = healthScoreRepository.findByUserId(userId)
+                .orElseThrow(() -> new AnalyticsNotFoundException(
+                        "Health score not found for user: " + userId + ". Profile may not be complete."));
+
+        return mapToHealthScoreResponse(saved);
+    }
+
+    /**
+     * Gets financial ratios (read from DB, no calculation).
+     */
+    public FinancialRatiosResponse getRatios(String userId) {
+        log.info("Fetching financial ratios for user: {}", userId);
+
+        FinancialRatios saved = ratiosRepository.findByUserId(userId)
+                .orElseThrow(() -> new AnalyticsNotFoundException(
+                        "Financial ratios not found for user: " + userId + ". Profile may not be complete."));
+
+        return mapToRatiosResponse(saved);
+    }
+
+    /**
+     * Gets spending analysis (read from DB, no calculation).
+     */
+    public SpendingByCategoryResponse getSpendingAnalysis(String userId) {
+        log.info("Fetching spending analysis for user: {}", userId);
+
+        SpendingByCategory saved = spendingRepository.findByUserId(userId)
+                .orElseThrow(() -> new AnalyticsNotFoundException(
+                        "Spending analysis not found for user: " + userId + ". Profile may not be complete."));
+
+        return mapToSpendingResponse(saved);
+    }
+
+    /**
+     * Gets net worth trend (read from DB).
+     */
+    public List<NetWorthDataPoint> getNetWorthTrend(String userId, int months) {
+        log.info("Fetching net worth trend for user: {} for {} months", userId, months);
+
+        LocalDateTime startDate = LocalDateTime.now().minusMonths(months);
+        List<NetWorthHistory> history = netWorthRepository.findByUserIdAndRecordedAtAfter(userId, startDate);
+
+        return history.stream()
+                .map(h -> new NetWorthDataPoint(h.getRecordedAt(), h.getNetWorth()))
+                .toList();
+    }
+
+    // ========================================
+    // INTERNAL: Calculate and Save Individual Analytics
+    // ========================================
+
+    private void calculateAndSaveHealthScore(UserProfile profile) {
+        log.info("Calculating and saving health score for user: {}", profile.getUserId());
 
         // Calculate component scores (0-100)
         int incomeStability = calculateIncomeStabilityScore(profile.getIncome());
@@ -57,12 +143,12 @@ public class AnalyticsService {
         );
 
         String status = determineStatus(overallScore);
-
-        // Generate recommendations
         List<String> recommendations = generateRecommendations(profile, overallScore);
 
-        // Save to database
-        FinancialHealthScore healthScore = new FinancialHealthScore();
+        // Find existing or create new (overwrite pattern)
+        FinancialHealthScore healthScore = healthScoreRepository.findByUserId(profile.getUserId())
+                .orElse(new FinancialHealthScore());
+
         healthScore.setUserId(profile.getUserId());
         healthScore.setOverallScore(overallScore);
         healthScore.setStatus(status);
@@ -73,29 +159,13 @@ public class AnalyticsService {
         healthScore.setSavingsRateScore(savingsRate);
         healthScore.setTopRecommendations(recommendations);
         healthScore.setCalculatedAt(LocalDateTime.now());
-        healthScoreRepository.save(healthScore);
 
-        // Map to response
-        FinancialHealthScoreResponse response = new FinancialHealthScoreResponse();
-        response.setOverallScore(overallScore);
-        response.setStatus(status);
-
-        Map<String, Integer> componentScores = new HashMap<>();
-        componentScores.put("incomeStability", incomeStability);
-        componentScores.put("expenseManagement", expenseManagement);
-        componentScores.put("debtHealth", debtHealth);
-        componentScores.put("emergencyFund", emergencyFund);
-        componentScores.put("savingsRate", savingsRate);
-        response.setComponentScores(componentScores);
-
-        response.setTopRecommendations(recommendations);
-        response.setCalculatedAt(LocalDateTime.now());
-
-        return response;
+        healthScoreRepository.save(healthScore); // Overwrites if exists
+        log.info("Saved health score for user: {} - Score: {}", profile.getUserId(), overallScore);
     }
 
-    public FinancialRatiosResponse calculateRatios(UserProfile profile) {
-        log.info("Calculating financial ratios for user: {}", profile.getUserId());
+    private void calculateAndSaveRatios(UserProfile profile) {
+        log.info("Calculating and saving financial ratios for user: {}", profile.getUserId());
 
         Double totalIncome = calculateMonthlyIncome(profile);
         Double totalExpenses = calculateMonthlyExpenses(profile);
@@ -116,8 +186,10 @@ public class AnalyticsService {
         String emergencyStatus = emergencyFundMonths >= 3 ? "Good" : emergencyFundMonths >= 1 ? "Warning" : "Critical";
         String expenseStatus = expenseToIncome <= 80 ? "Good" : expenseToIncome <= 90 ? "Warning" : "Critical";
 
-        // Save to database
-        FinancialRatios ratios = new FinancialRatios();
+        // Find existing or create new (overwrite pattern)
+        FinancialRatios ratios = ratiosRepository.findByUserId(profile.getUserId())
+                .orElse(new FinancialRatios());
+
         ratios.setUserId(profile.getUserId());
         ratios.setDebtToIncomeRatio(debtToIncome);
         ratios.setDebtToIncomeStatus(debtStatus);
@@ -128,25 +200,13 @@ public class AnalyticsService {
         ratios.setExpenseToIncomeRatio(expenseToIncome);
         ratios.setExpenseToIncomeStatus(expenseStatus);
         ratios.setCalculatedAt(LocalDateTime.now());
-        ratiosRepository.save(ratios);
 
-        // Map to response
-        FinancialRatiosResponse response = new FinancialRatiosResponse();
-        response.setDebtToIncomeRatio(debtToIncome);
-        response.setDebtToIncomeStatus(debtStatus);
-        response.setSavingsRate(savingsRate);
-        response.setSavingsRateStatus(savingsStatus);
-        response.setEmergencyFundMonths(emergencyFundMonths);
-        response.setEmergencyFundStatus(emergencyStatus);
-        response.setExpenseToIncomeRatio(expenseToIncome);
-        response.setExpenseToIncomeStatus(expenseStatus);
-        response.setCalculatedAt(LocalDateTime.now());
-
-        return response;
+        ratiosRepository.save(ratios); // Overwrites if exists
+        log.info("Saved financial ratios for user: {}", profile.getUserId());
     }
 
-    public SpendingByCategoryResponse analyzeSpending(UserProfile profile) {
-        log.info("Analyzing spending for user: {}", profile.getUserId());
+    private void calculateAndSaveSpending(UserProfile profile) {
+        log.info("Calculating and saving spending analysis for user: {}", profile.getUserId());
 
         Map<String, Double> categories = new HashMap<>();
 
@@ -187,34 +247,98 @@ public class AnalyticsService {
 
         // Generate insights
         List<String> insights = new ArrayList<>();
-        if (debtPayments > total * 0.30) {
-            insights.add("Debt payments consuming " + String.format("%.0f", (debtPayments/total)*100) + "% of expenses - priority to eliminate");
-        }
-        if (food > total * 0.25) {
-            insights.add("Food expenses are high - consider meal planning to reduce costs");
+        if (total > 0) {
+            if (debtPayments > total * 0.30) {
+                insights.add("Debt payments consuming " + String.format("%.0f", (debtPayments/total)*100) + "% of expenses - priority to eliminate");
+            }
+            if (food > total * 0.25) {
+                insights.add("Food expenses are high - consider meal planning to reduce costs");
+            }
         }
 
-        SpendingByCategoryResponse response = new SpendingByCategoryResponse();
-        response.setCategories(categories);
-        response.setPercentages(percentages);
-        response.setTopCategories(topCategories);
-        response.setInsights(insights);
+        // Find existing or create new (overwrite pattern)
+        SpendingByCategory spending = spendingRepository.findByUserId(profile.getUserId())
+                .orElse(new SpendingByCategory());
+
+        spending.setUserId(profile.getUserId());
+        spending.setCategories(categories);
+        spending.setPercentages(percentages);
+        spending.setTopCategories(topCategories);
+        spending.setInsights(insights);
+        spending.setCalculatedAt(LocalDateTime.now());
+
+        spendingRepository.save(spending); // Overwrites if exists
+        log.info("Saved spending analysis for user: {}", profile.getUserId());
+    }
+
+    private void saveNetWorthSnapshot(UserProfile profile) {
+        log.info("Saving net worth snapshot for user: {}", profile.getUserId());
+
+        Double netWorth = profile.getAssetsAndSavings() != null ?
+                (profile.getAssetsAndSavings().getNetWorth() != null ? profile.getAssetsAndSavings().getNetWorth() : 0.0) : 0.0;
+
+        NetWorthHistory history = new NetWorthHistory();
+        history.setUserId(profile.getUserId());
+        history.setNetWorth(netWorth);
+        history.setRecordedAt(LocalDateTime.now());
+
+        netWorthRepository.save(history); // Always append, never overwrite
+        log.info("Saved net worth snapshot for user: {} - Net Worth: {}", profile.getUserId(), netWorth);
+    }
+
+    // ========================================
+    // INTERNAL: Mapping from DB Models to DTOs
+    // ========================================
+
+    private FinancialHealthScoreResponse mapToHealthScoreResponse(FinancialHealthScore saved) {
+        FinancialHealthScoreResponse response = new FinancialHealthScoreResponse();
+        response.setOverallScore(saved.getOverallScore());
+        response.setStatus(saved.getStatus());
+
+        Map<String, Integer> componentScores = new HashMap<>();
+        componentScores.put("incomeStability", saved.getIncomeStabilityScore());
+        componentScores.put("expenseManagement", saved.getExpenseManagementScore());
+        componentScores.put("debtHealth", saved.getDebtHealthScore());
+        componentScores.put("emergencyFund", saved.getEmergencyFundScore());
+        componentScores.put("savingsRate", saved.getSavingsRateScore());
+        response.setComponentScores(componentScores);
+
+        response.setTopRecommendations(saved.getTopRecommendations());
+        response.setCalculatedAt(saved.getCalculatedAt());
 
         return response;
     }
 
-    public List<NetWorthDataPoint> getNetWorthTrend(String userId, int months) {
-        log.info("Fetching net worth trend for user: {} for {} months", userId, months);
+    private FinancialRatiosResponse mapToRatiosResponse(FinancialRatios saved) {
+        FinancialRatiosResponse response = new FinancialRatiosResponse();
+        response.setDebtToIncomeRatio(saved.getDebtToIncomeRatio());
+        response.setDebtToIncomeStatus(saved.getDebtToIncomeStatus());
+        response.setSavingsRate(saved.getSavingsRate());
+        response.setSavingsRateStatus(saved.getSavingsRateStatus());
+        response.setEmergencyFundMonths(saved.getEmergencyFundMonths());
+        response.setEmergencyFundStatus(saved.getEmergencyFundStatus());
+        response.setExpenseToIncomeRatio(saved.getExpenseToIncomeRatio());
+        response.setExpenseToIncomeStatus(saved.getExpenseToIncomeStatus());
+        response.setCalculatedAt(saved.getCalculatedAt());
 
-        LocalDateTime startDate = LocalDateTime.now().minusMonths(months);
-        List<NetWorthHistory> history = netWorthRepository.findByUserIdAndRecordedAtAfter(userId, startDate);
-
-        return history.stream()
-                .map(h -> new NetWorthDataPoint(h.getRecordedAt(), h.getNetWorth()))
-                .toList();
+        return response;
     }
 
-    // Helper methods
+    private SpendingByCategoryResponse mapToSpendingResponse(SpendingByCategory saved) {
+        SpendingByCategoryResponse response = new SpendingByCategoryResponse();
+        response.setCategories(saved.getCategories());
+        response.setPercentages(saved.getPercentages());
+        response.setTopCategories(saved.getTopCategories());
+        response.setInsights(saved.getInsights());
+        response.setCalculatedAt(saved.getCalculatedAt());
+
+        return response;
+    }
+
+    // ========================================
+    // INTERNAL: Calculation Helper Methods
+    // ========================================
+
     private int calculateIncomeStabilityScore(Income income) {
         if (income == null) return 0;
         String stability = income.getIncomeStability();
@@ -248,29 +372,31 @@ public class AnalyticsService {
         Double annualIncome = calculateMonthlyIncome(profile) * 12;
 
         if (annualIncome == 0) return totalDebt > 0 ? 0 : 100;
-        if (totalDebt == 0) return 100;
 
-        Double ratio = totalDebt / annualIncome;
-        if (ratio <= 1.0) return 100;
-        if (ratio <= 2.0) return 70;
-        if (ratio <= 3.0) return 40;
-        return 20;
+        Double debtToIncomeRatio = (totalDebt / annualIncome) * 100;
+
+        if (debtToIncomeRatio == 0) return 100;
+        if (debtToIncomeRatio < 100) return 90;
+        if (debtToIncomeRatio < 200) return 70;
+        if (debtToIncomeRatio < 300) return 50;
+        if (debtToIncomeRatio < 400) return 30;
+        return 10;
     }
 
     private int calculateEmergencyFundScore(UserProfile profile) {
-        AssetsAndSavings assets = profile.getAssetsAndSavings();
-        if (assets == null || assets.getEmergencyFund() == null) return 0;
-
-        Double emergencyFund = assets.getEmergencyFund();
         Double monthlyExpenses = calculateMonthlyExpenses(profile);
+        Double emergencyFund = profile.getAssetsAndSavings() != null ?
+                (profile.getAssetsAndSavings().getEmergencyFund() != null ? profile.getAssetsAndSavings().getEmergencyFund() : 0.0) : 0.0;
 
         if (monthlyExpenses == 0) return emergencyFund > 0 ? 100 : 0;
 
-        Double months = emergencyFund / monthlyExpenses;
-        if (months >= 6) return 100;
-        if (months >= 3) return 80;
-        if (months >= 1) return 50;
-        return 20;
+        Double monthsCovered = emergencyFund / monthlyExpenses;
+
+        if (monthsCovered >= 6) return 100;
+        if (monthsCovered >= 3) return 75;
+        if (monthsCovered >= 1) return 50;
+        if (monthsCovered > 0) return 25;
+        return 0;
     }
 
     private int calculateSavingsRateScore(UserProfile profile) {
@@ -280,48 +406,63 @@ public class AnalyticsService {
         if (income == 0) return 0;
 
         Double savingsRate = ((income - expenses) / income) * 100;
+
         if (savingsRate >= 20) return 100;
         if (savingsRate >= 15) return 80;
         if (savingsRate >= 10) return 60;
         if (savingsRate >= 5) return 40;
-        return 20;
+        if (savingsRate > 0) return 20;
+        return 0;
     }
 
-    private String determineStatus(int score) {
-        if (score >= 81) return "Excellent";
-        if (score >= 61) return "Good";
-        if (score >= 41) return "Needs Improvement";
-        return "Critical";
+    private String determineStatus(int overallScore) {
+        if (overallScore >= 80) return "Excellent";
+        if (overallScore >= 60) return "Good";
+        if (overallScore >= 40) return "Fair";
+        return "Poor";
     }
 
-    private List<String> generateRecommendations(UserProfile profile, int score) {
+    private List<String> generateRecommendations(UserProfile profile, int overallScore) {
         List<String> recommendations = new ArrayList<>();
 
-        Double monthlyExpenses = calculateMonthlyExpenses(profile);
-        AssetsAndSavings assets = profile.getAssetsAndSavings();
-        Double emergencyFund = assets != null && assets.getEmergencyFund() != null ? assets.getEmergencyFund() : 0.0;
+        Double income = calculateMonthlyIncome(profile);
+        Double expenses = calculateMonthlyExpenses(profile);
+        Double emergencyFund = profile.getAssetsAndSavings() != null ?
+                (profile.getAssetsAndSavings().getEmergencyFund() != null ? profile.getAssetsAndSavings().getEmergencyFund() : 0.0) : 0.0;
 
-        if (emergencyFund < monthlyExpenses * 3) {
-            recommendations.add("Build emergency fund to 3-6 months of expenses");
+        if (income > 0) {
+            Double expenseRatio = expenses / income;
+            if (expenseRatio > 0.90) {
+                recommendations.add("Your expenses are very high relative to income. Focus on reducing non-essential spending.");
+            }
+
+            Double monthsCovered = expenses > 0 ? emergencyFund / expenses : 0;
+            if (monthsCovered < 3) {
+                recommendations.add("Build your emergency fund to cover at least 3-6 months of expenses.");
+            }
+
+            Double savingsRate = ((income - expenses) / income) * 100;
+            if (savingsRate < 10) {
+                recommendations.add("Aim to save at least 10-20% of your monthly income.");
+            }
         }
 
         Double totalDebt = calculateTotalDebt(profile);
-        if (totalDebt > 0) {
-            recommendations.add("Focus on paying off high-interest debt");
+        if (totalDebt > income * 12 * 2) {
+            recommendations.add("Your debt level is high. Consider a debt reduction strategy like the debt snowball or avalanche method.");
         }
 
-        Double income = calculateMonthlyIncome(profile);
-        if ((income - monthlyExpenses) / income < 0.15) {
-            recommendations.add("Reduce expenses by 10-15%");
+        if (recommendations.isEmpty()) {
+            recommendations.add("You're doing well! Continue maintaining good financial habits.");
         }
 
-        return recommendations.size() > 3 ? recommendations.subList(0, 3) : recommendations;
+        return recommendations;
     }
 
     private Double calculateMonthlyIncome(UserProfile profile) {
-        Income income = profile.getIncome();
-        if (income == null) return 0.0;
-        return income.getTotalMonthlyIncome() != null ? income.getTotalMonthlyIncome() : 0.0;
+        if (profile.getIncome() == null) return 0.0;
+        return profile.getIncome().getTotalMonthlyIncome() != null ?
+                profile.getIncome().getTotalMonthlyIncome() : 0.0;
     }
 
     private Double calculateMonthlyExpenses(UserProfile profile) {
@@ -341,6 +482,7 @@ public class AnalyticsService {
 
     private Double calculateTotalDebt(UserProfile profile) {
         if (profile.getDebts() == null) return 0.0;
+
         return profile.getDebts().stream()
                 .mapToDouble(debt -> debt.getTotalAmountOwed() != null ? debt.getTotalAmountOwed() : 0.0)
                 .sum();
@@ -348,97 +490,82 @@ public class AnalyticsService {
 
     private Double calculateDebtPayments(UserProfile profile) {
         if (profile.getDebts() == null) return 0.0;
+
         return profile.getDebts().stream()
                 .mapToDouble(debt -> debt.getMonthlyPayment() != null ? debt.getMonthlyPayment() : 0.0)
                 .sum();
     }
 
     private Double calculateFoodExpenses(UserProfile profile) {
-        VariableExpenses ve = profile.getVariableExpenses();
-        if (ve == null) return 0.0;
+        if (profile.getVariableExpenses() == null) return 0.0;
 
-        Double total = 0.0;
-        total += ve.getGroceryShopping() != null ? ve.getGroceryShopping() : 0.0;
-        total += ve.getEatingOut() != null ? ve.getEatingOut() : 0.0;
-        total += ve.getCoffee() != null ? ve.getCoffee() : 0.0;
-        total += ve.getFoodDelivery() != null ? ve.getFoodDelivery() : 0.0;
+        Double grocery = profile.getVariableExpenses().getGroceryShopping() != null ?
+                profile.getVariableExpenses().getGroceryShopping() : 0.0;
+        Double eatingOut = profile.getVariableExpenses().getEatingOut() != null ?
+                profile.getVariableExpenses().getEatingOut() : 0.0;
 
-        return total;
+        return grocery + eatingOut;
     }
 
     private Double calculateTransportation(UserProfile profile) {
-        FixedExpenses fe = profile.getFixedExpenses();
-        if (fe == null) return 0.0;
+        if (profile.getFixedExpenses() == null) return 0.0;
 
-        Double total = 0.0;
-        total += fe.getCarLoanPayment() != null ? fe.getCarLoanPayment() : 0.0;
-        total += fe.getCarInsurance() != null ? fe.getCarInsurance() : 0.0;
-        total += fe.getMonthlyFuel() != null ? fe.getMonthlyFuel() : 0.0;
-        total += fe.getPublicTransportPass() != null ? fe.getPublicTransportPass() : 0.0;
+        Double fuel = profile.getFixedExpenses().getMonthlyFuel() != null ?
+                profile.getFixedExpenses().getMonthlyFuel() : 0.0;
+        Double transport = profile.getFixedExpenses().getPublicTransportPass() != null ?
+                profile.getFixedExpenses().getPublicTransportPass() : 0.0;
+        Double parking = profile.getFixedExpenses().getParking() != null ?
+                profile.getFixedExpenses().getParking() : 0.0;
 
-        return total;
+        return fuel + transport + parking;
     }
 
     private Double calculateHousing(UserProfile profile) {
-        FixedExpenses fe = profile.getFixedExpenses();
-        if (fe == null) return 0.0;
+        if (profile.getFixedExpenses() == null) return 0.0;
 
-        Double total = 0.0;
-        total += fe.getRent() != null ? fe.getRent() : 0.0;
-        total += fe.getPropertyTax() != null ? fe.getPropertyTax() : 0.0;
-        total += fe.getHomeInsurance() != null ? fe.getHomeInsurance() : 0.0;
+        Double rent = profile.getFixedExpenses().getRent() != null ?
+                profile.getFixedExpenses().getRent() : 0.0;
+        Double propertyTax = profile.getFixedExpenses().getPropertyTax() != null ?
+                profile.getFixedExpenses().getPropertyTax() : 0.0;
+        Double insurance = profile.getFixedExpenses().getHomeInsurance() != null ?
+                profile.getFixedExpenses().getHomeInsurance() : 0.0;
 
-        return total;
+        return rent + propertyTax + insurance;
     }
 
     private Double calculateUtilities(UserProfile profile) {
-        FixedExpenses fe = profile.getFixedExpenses();
-        if (fe == null) return 0.0;
+        if (profile.getFixedExpenses() == null) return 0.0;
 
-        Double total = 0.0;
-        total += fe.getElectricity() != null ? fe.getElectricity() : 0.0;
-        total += fe.getWater() != null ? fe.getWater() : 0.0;
-        total += fe.getGas() != null ? fe.getGas() : 0.0;
-        total += fe.getInternet() != null ? fe.getInternet() : 0.0;
+        Double electricity = profile.getFixedExpenses().getElectricity() != null ?
+                profile.getFixedExpenses().getElectricity() : 0.0;
+        Double water = profile.getFixedExpenses().getWater() != null ?
+                profile.getFixedExpenses().getWater() : 0.0;
+        Double gas = profile.getFixedExpenses().getGas() != null ?
+                profile.getFixedExpenses().getGas() : 0.0;
+        Double internet = profile.getFixedExpenses().getInternet() != null ?
+                profile.getFixedExpenses().getInternet() : 0.0;
 
-        return total;
+        return electricity + water + gas + internet;
     }
 
     private Double calculateHealthcare(UserProfile profile) {
-        VariableExpenses ve = profile.getVariableExpenses();
-        if (ve == null) return 0.0;
+        if (profile.getVariableExpenses() == null) return 0.0;
 
-        Double total = 0.0;
-        total += ve.getMedications() != null ? ve.getMedications() : 0.0;
-        total += ve.getDoctorVisits() != null ? ve.getDoctorVisits() : 0.0;
-        total += ve.getPharmacyItems() != null ? ve.getPharmacyItems() : 0.0;
-
-        return total;
+        return profile.getVariableExpenses().getHealthCare() != null ?
+                profile.getVariableExpenses().getHealthCare() : 0.0;
     }
 
     private Double calculateEntertainment(UserProfile profile) {
-        VariableExpenses ve = profile.getVariableExpenses();
-        if (ve == null) return 0.0;
+        if (profile.getVariableExpenses() == null) return 0.0;
 
-        Double total = 0.0;
-        total += ve.getMoviesEvents() != null ? ve.getMoviesEvents() : 0.0;
-        total += ve.getHobbies() != null ? ve.getHobbies() : 0.0;
-        total += ve.getSportsGym() != null ? ve.getSportsGym() : 0.0;
-        total += ve.getOtherEntertainment() != null ? ve.getOtherEntertainment() : 0.0;
-
-        return total;
+        return profile.getVariableExpenses().getEntertainment() != null ?
+                profile.getVariableExpenses().getEntertainment() : 0.0;
     }
 
     private Double calculateEducation(UserProfile profile) {
-        VariableExpenses ve = profile.getVariableExpenses();
-        if (ve == null) return 0.0;
+        if (profile.getVariableExpenses() == null) return 0.0;
 
-        Double total = 0.0;
-        total += ve.getSchoolFees() != null ? ve.getSchoolFees() : 0.0;
-        total += ve.getSchoolSupplies() != null ? ve.getSchoolSupplies() : 0.0;
-        total += ve.getTutoring() != null ? ve.getTutoring() : 0.0;
-        total += ve.getOnlineCourses() != null ? ve.getOnlineCourses() : 0.0;
-
-        return total;
+        return profile.getVariableExpenses().getEducation() != null ?
+                profile.getVariableExpenses().getEducation() : 0.0;
     }
 }
