@@ -13,6 +13,11 @@ services:
       - mongodb_data:/data/db
     networks:
       - flouswise-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Redis Cache
   redis:
@@ -24,6 +29,23 @@ services:
       - redis_data:/data
     networks:
       - flouswise-network
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./auth-service/auth
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8080:8080"
+    networks:
+      - flouswise-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+    restart: unless-stopped
 
 volumes:
   mongodb_data:
