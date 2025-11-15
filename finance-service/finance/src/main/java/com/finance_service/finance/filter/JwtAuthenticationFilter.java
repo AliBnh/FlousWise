@@ -46,12 +46,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             // Validate token
             if (jwtService.validateToken(token)) {
-                // Extract email from token
+                // Extract userId and email from token
+                String userId = jwtService.extractUserId(token);
                 String email = jwtService.extractEmail(token);
 
-                // Create authentication object
+                // Create authentication object with userId as principal
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        email,
+                        userId, // Use userId as principal
                         null,
                         new ArrayList<>() // Empty authorities for now
                 );
