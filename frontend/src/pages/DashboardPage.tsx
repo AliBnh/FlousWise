@@ -20,7 +20,12 @@ export default function DashboardPage() {
   const loadDashboard = async () => {
     try {
       const data = await financeService.getDashboardSummary();
-      setSummary(data);
+      // Validate that we have the required data
+      if (data && typeof data.monthlyIncome !== 'undefined') {
+        setSummary(data);
+      } else {
+        setError('Welcome! Please complete your financial profile to see your dashboard.');
+      }
     } catch (err: any) {
       // If profile doesn't exist, show welcome message
       if (err.response?.status === 404) {
@@ -73,7 +78,7 @@ export default function DashboardPage() {
                   <h3 className="text-sm font-medium text-gray-600">Monthly Income</h3>
                   <span className="text-2xl">💰</span>
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{summary.monthlyIncome.toFixed(0)} MAD</p>
+                <p className="text-3xl font-bold text-gray-900">{(summary.monthlyIncome || 0).toFixed(0)} MAD</p>
               </div>
 
               <div className="bg-white rounded-lg shadow-lg p-6">
@@ -81,16 +86,16 @@ export default function DashboardPage() {
                   <h3 className="text-sm font-medium text-gray-600">Monthly Expenses</h3>
                   <span className="text-2xl">💸</span>
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{summary.monthlyExpenses.toFixed(0)} MAD</p>
+                <p className="text-3xl font-bold text-gray-900">{(summary.monthlyExpenses || 0).toFixed(0)} MAD</p>
               </div>
 
               <div className="bg-white rounded-lg shadow-lg p-6">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-medium text-gray-600">Net Surplus/Deficit</h3>
-                  <span className="text-2xl">{summary.netSurplus >= 0 ? '✅' : '⚠️'}</span>
+                  <span className="text-2xl">{(summary.netSurplus || 0) >= 0 ? '✅' : '⚠️'}</span>
                 </div>
-                <p className={`text-3xl font-bold ${summary.netSurplus >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {summary.netSurplus >= 0 ? '+' : ''}{summary.netSurplus.toFixed(0)} MAD
+                <p className={`text-3xl font-bold ${(summary.netSurplus || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {(summary.netSurplus || 0) >= 0 ? '+' : ''}{(summary.netSurplus || 0).toFixed(0)} MAD
                 </p>
               </div>
 
@@ -99,17 +104,17 @@ export default function DashboardPage() {
                   <h3 className="text-sm font-medium text-gray-600">Financial Health</h3>
                   <span className="text-2xl">📊</span>
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{summary.financialHealthScore}/100</p>
+                <p className="text-3xl font-bold text-gray-900">{summary.financialHealthScore || 0}/100</p>
                 <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full ${
-                      summary.financialHealthScore >= 80
+                      (summary.financialHealthScore || 0) >= 80
                         ? 'bg-green-500'
-                        : summary.financialHealthScore >= 60
+                        : (summary.financialHealthScore || 0) >= 60
                         ? 'bg-yellow-500'
                         : 'bg-red-500'
                     }`}
-                    style={{ width: `${summary.financialHealthScore}%` }}
+                    style={{ width: `${summary.financialHealthScore || 0}%` }}
                   ></div>
                 </div>
               </div>
@@ -154,14 +159,14 @@ export default function DashboardPage() {
                     datasets: [
                       {
                         label: 'Income',
-                        data: [summary.monthlyIncome],
+                        data: [summary.monthlyIncome || 0],
                         backgroundColor: 'rgba(34, 197, 94, 0.7)',
                         borderColor: 'rgba(34, 197, 94, 1)',
                         borderWidth: 2,
                       },
                       {
                         label: 'Expenses',
-                        data: [summary.monthlyExpenses],
+                        data: [summary.monthlyExpenses || 0],
                         backgroundColor: 'rgba(239, 68, 68, 0.7)',
                         borderColor: 'rgba(239, 68, 68, 1)',
                         borderWidth: 2,
@@ -202,19 +207,19 @@ export default function DashboardPage() {
                       labels: ['Health Score', 'Room for Improvement'],
                       datasets: [
                         {
-                          data: [summary.financialHealthScore, 100 - summary.financialHealthScore],
+                          data: [(summary.financialHealthScore || 0), 100 - (summary.financialHealthScore || 0)],
                           backgroundColor: [
-                            summary.financialHealthScore >= 80
+                            (summary.financialHealthScore || 0) >= 80
                               ? 'rgba(34, 197, 94, 0.8)'
-                              : summary.financialHealthScore >= 60
+                              : (summary.financialHealthScore || 0) >= 60
                               ? 'rgba(234, 179, 8, 0.8)'
                               : 'rgba(239, 68, 68, 0.8)',
                             'rgba(229, 231, 235, 0.5)',
                           ],
                           borderColor: [
-                            summary.financialHealthScore >= 80
+                            (summary.financialHealthScore || 0) >= 80
                               ? 'rgba(34, 197, 94, 1)'
-                              : summary.financialHealthScore >= 60
+                              : (summary.financialHealthScore || 0) >= 60
                               ? 'rgba(234, 179, 8, 1)'
                               : 'rgba(239, 68, 68, 1)',
                             'rgba(229, 231, 235, 1)',
@@ -242,11 +247,11 @@ export default function DashboardPage() {
                   />
                 </div>
                 <div className="text-center mt-4">
-                  <p className="text-2xl font-bold text-gray-900">{summary.financialHealthScore}/100</p>
+                  <p className="text-2xl font-bold text-gray-900">{summary.financialHealthScore || 0}/100</p>
                   <p className="text-sm text-gray-600">
-                    {summary.financialHealthScore >= 80
+                    {(summary.financialHealthScore || 0) >= 80
                       ? 'Excellent financial health!'
-                      : summary.financialHealthScore >= 60
+                      : (summary.financialHealthScore || 0) >= 60
                       ? 'Good, but room for improvement'
                       : 'Needs attention'}
                   </p>
