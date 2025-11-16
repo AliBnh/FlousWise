@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { financeService } from '../services/financeService';
 import type { DashboardSummary } from '../types/finance';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
+import { Doughnut, Bar } from 'react-chartjs-2';
+
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,7 +57,10 @@ export default function DashboardPage() {
             <div className="text-6xl mb-4">📊</div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Get Started</h2>
             <p className="text-gray-600 mb-6">{error}</p>
-            <button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+            <button
+              onClick={() => navigate('/profile/create')}
+              className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            >
               Create Your Profile
             </button>
           </div>
@@ -110,18 +119,138 @@ export default function DashboardPage() {
             <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors">
+                <button
+                  onClick={() => navigate('/profile/edit')}
+                  className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors"
+                >
                   <span className="text-2xl">✏️</span>
                   <span className="font-medium text-gray-700">Update Profile</span>
                 </button>
-                <button className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors">
+                <button
+                  onClick={() => navigate('/analytics')}
+                  className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors"
+                >
                   <span className="text-2xl">📈</span>
                   <span className="font-medium text-gray-700">View Analytics</span>
                 </button>
-                <button className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors">
+                <button
+                  onClick={() => navigate('/profile/create')}
+                  className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors"
+                >
                   <span className="text-2xl">🎯</span>
                   <span className="font-medium text-gray-700">Set Goals</span>
                 </button>
+              </div>
+            </div>
+
+            {/* Financial Visualizations */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+              {/* Income vs Expenses Chart */}
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Income vs Expenses</h2>
+                <Bar
+                  data={{
+                    labels: ['Monthly Overview'],
+                    datasets: [
+                      {
+                        label: 'Income',
+                        data: [summary.monthlyIncome],
+                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 2,
+                      },
+                      {
+                        label: 'Expenses',
+                        data: [summary.monthlyExpenses],
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 2,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                      legend: {
+                        position: 'top' as const,
+                      },
+                      title: {
+                        display: false,
+                      },
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          callback: function(value) {
+                            return value + ' MAD';
+                          },
+                        },
+                      },
+                    },
+                  }}
+                />
+              </div>
+
+              {/* Financial Health Breakdown */}
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Financial Health Score</h2>
+                <div className="flex items-center justify-center h-64">
+                  <Doughnut
+                    data={{
+                      labels: ['Health Score', 'Room for Improvement'],
+                      datasets: [
+                        {
+                          data: [summary.financialHealthScore, 100 - summary.financialHealthScore],
+                          backgroundColor: [
+                            summary.financialHealthScore >= 80
+                              ? 'rgba(34, 197, 94, 0.8)'
+                              : summary.financialHealthScore >= 60
+                              ? 'rgba(234, 179, 8, 0.8)'
+                              : 'rgba(239, 68, 68, 0.8)',
+                            'rgba(229, 231, 235, 0.5)',
+                          ],
+                          borderColor: [
+                            summary.financialHealthScore >= 80
+                              ? 'rgba(34, 197, 94, 1)'
+                              : summary.financialHealthScore >= 60
+                              ? 'rgba(234, 179, 8, 1)'
+                              : 'rgba(239, 68, 68, 1)',
+                            'rgba(229, 231, 235, 1)',
+                          ],
+                          borderWidth: 2,
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: true,
+                      plugins: {
+                        legend: {
+                          position: 'bottom' as const,
+                        },
+                        tooltip: {
+                          callbacks: {
+                            label: function(context) {
+                              return context.label + ': ' + context.parsed + '/100';
+                            },
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </div>
+                <div className="text-center mt-4">
+                  <p className="text-2xl font-bold text-gray-900">{summary.financialHealthScore}/100</p>
+                  <p className="text-sm text-gray-600">
+                    {summary.financialHealthScore >= 80
+                      ? 'Excellent financial health!'
+                      : summary.financialHealthScore >= 60
+                      ? 'Good, but room for improvement'
+                      : 'Needs attention'}
+                  </p>
+                </div>
               </div>
             </div>
 
