@@ -1,0 +1,26 @@
+# FastAPI and Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+python-dotenv==1.0.0
+
+# LLM & RAG (Retrieval-Augmented Generation)
+langchain==0.1.0                # LLM framework for RAG pipelines
+chromadb==0.4.18                # Vector database for storing book embeddings
+sentence-transformers==2.2.2    # Generate text embeddings (all-MiniLM-L6-v2 model)
+ollama==0.1.6                   # Ollama API client for local LLM
+
+# HTTP & Async
+httpx==0.25.2                   # Async HTTP client for calling Finance Service and Ollama
+aiohttp==3.9.1
+
+# Database & Messaging
+pymongo==4.6.1                  # MongoDB client for chat history
+motor==3.3.2                    # Async MongoDB driver
+redis==5.0.1                    # Redis client for caching user profiles
+kafka-python==2.0.2             # Kafka client for publishing events
+
+# Utilities
+prometheus-client==0.19.0       # Metrics collection
+python-multipart==0.0.6         # File upload support
