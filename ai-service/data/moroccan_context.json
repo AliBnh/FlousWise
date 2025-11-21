@@ -1,0 +1,88 @@
+{
+  "salaries": {
+    "minimum_wage": 3045,
+    "average_salary": 5000,
+    "cities": {
+      "Casablanca": 6500,
+      "Rabat": 7000,
+      "Marrakech": 5500,
+      "Tangier": 5800,
+      "Fes": 5200,
+      "Agadir": 5300,
+      "Meknes": 5100,
+      "Kenitra": 5000
+    }
+  },
+  "cost_of_living": {
+    "basic_monthly": {
+      "min": 5000,
+      "max": 7000,
+      "description": "Basic living costs for single person in urban area"
+    }
+  },
+  "government_programs": {
+    "RAMED": {
+      "name": "Free Healthcare (RAMED)",
+      "description": "Government-provided free healthcare for low-income families",
+      "eligibility": "Household income less than 5,600 MAD/month per member",
+      "application": "Visit nearest health center with proof of income, residence certificate, and family documents",
+      "benefits": "Free consultations, medications, hospitalizations at public facilities"
+    },
+    "Tayssir": {
+      "name": "Education Support (Tayssir)",
+      "description": "Financial support for families to keep children in school",
+      "eligibility": "Children in public schools, low-income families in rural and urban areas",
+      "amount": "60-140 MAD/month per child depending on grade level",
+      "application": "Through school administration with proof of enrollment"
+    },
+    "INDH": {
+      "name": "Human Development Initiative (INDH)",
+      "description": "National initiative for social development",
+      "programs": ["Microfinance loans", "Skills training", "Infrastructure development", "Support for vulnerable groups"],
+      "website": "indh.ma"
+    },
+    "housing_subsidies": {
+      "name": "Housing Subsidies",
+      "description": "Government support for low-income housing",
+      "programs": ["Social housing", "First-time buyer grants", "Mortgage guarantees"]
+    }
+  },
+  "opportunities": {
+    "freelance_platforms": [
+      "Ureed.com",
+      "Freelance.ma",
+      "Upwork",
+      "Fiverr",
+      "Mstfreelancer.com"
+    ],
+    "tutoring_rate": {
+      "min": 100,
+      "max": 200,
+      "unit": "MAD/hour",
+      "subjects": "Languages, Math, Science, Programming"
+    },
+    "web_dev_project": {
+      "min": 3000,
+      "max": 5000,
+      "unit": "MAD per project",
+      "type": "Small business website or landing page"
+    },
+    "side_income_ideas": [
+      "Online tutoring (100-200 MAD/hour)",
+      "Freelance web development (3000-5000 MAD/project)",
+      "Freelance graphic design (1500-3000 MAD/project)",
+      "Translation services (50-100 MAD per 500 words)",
+      "Social media management (1500-3000 MAD/month per client)",
+      "Content writing (100-200 MAD per article)",
+      "Photography services (1000-3000 MAD per event)",
+      "Delivery driver (2000-4000 MAD/month part-time)",
+      "Private cooking/catering (1500-3000 MAD per event)"
+    ]
+  },
+  "financial_reality": {
+    "paycheck_to_paycheck": "50%+ of Moroccans live paycheck-to-paycheck",
+    "financial_stress": "80%+ of young adults cite money as #1 anxiety source",
+    "emergency_savings": "Only 30% have emergency savings",
+    "debt_common": "Consumer debt, family loans, and microfinance loans are very common"
+  }
+}
